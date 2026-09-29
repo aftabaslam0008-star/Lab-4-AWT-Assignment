@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Parcelwise - Order Tracking & Live Support</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">Parcelwise<span>order tracking & live support</span></div>
+    <div class="pills" aria-label="Connection status">
+      <span class="pill" id="pill-rest" title="REST API"><i></i>REST</span>
+      <span class="pill" id="pill-ws" title="Socket.io WebSocket"><i></i>WebSocket</span>
+      <span class="pill" id="pill-sse" title="Server-Sent Events"><i></i>SSE</span>
+    </div>
+    <div class="who">
+      <div class="seg" role="group" aria-label="Role">
+        <button id="role-customer" data-role="customer">Customer</button>
+        <button id="role-agent" data-role="agent">Support agent</button>
+      </div>
+      <input id="agent-key" type="password" placeholder="Agent key" autocomplete="off" hidden>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs" role="tablist">
+    <button data-tab="shop" data-for="customer" class="on">Shop</button>
+    <button data-tab="orders">Orders</button>
+    <button data-tab="chat">Support chat <b class="badge" id="chat-badge" hidden>0</b></button>
+    <button data-tab="alerts">Live alerts <b class="badge" id="alert-badge" hidden>0</b></button>
+    <button data-tab="rpc">JSON-RPC console</button>
+  </nav>
+
+  <main>
+    <!-- SHOP -->
+    <section id="tab-shop" class="panel">
+      <div class="split">
+        <div>
+          <h2>Catalog</h2>
+          <p class="muted">Loaded from <code>GET /api/v1/catalog</code>. Pick something and place an order to watch it travel.</p>
+          <div id="catalog" class="grid"></div>
+        </div>
+        <aside class="cart" aria-label="Cart">
+          <h2>Your cart</h2>
+          <div id="cart-lines"></div>
+          <div class="total"><span>Total</span><b id="cart-total">$0.00</b></div>
+          <label>Name <input id="co-name" autocomplete="name" placeholder="Ayesha Khan"></label>
+          <label>Email <input id="co-email" type="email" autocomplete="email" placeholder="ayesha@example.com"></label>
+          <button class="btn" id="place-order">Place order</button>
+          <p class="hint">Demo emails with seeded orders: ayesha@example.com, bilal@example.com</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ORDERS -->
+    <section id="tab-orders" class="panel" hidden>
+      <div id="customer-orders">
+        <div class="row-between">
+          <h2>Your orders</h2>
+          <form id="lookup" class="inline">
+            <input id="lookup-email" type="email" placeholder="Email used at checkout" required>
+            <button class="btn ghost">Find my orders</button>
+          </form>
+        </div>
+        <div id="orders-list" class="stack"></div>
+      </div>
+
+      <div id="agent-orders" hidden>
+        <div class="row-between"><h2>All orders</h2>
+          <form id="broadcast" class="inline">
+            <input id="bc-title" placeholder="Broadcast a system alert to everyone" required>
+            <select id="bc-level"><option>info</option><option>success</option><option>warning</option><option>error</option></select>
+            <button class="btn ghost">Send via SSE</button>
+          </form>
+        </div>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th><th>Move to</th><th></th></tr></thead>
+          <tbody id="agent-table"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- CHAT -->
+    <section id="tab-chat" class="panel" hidden>
+      <div class="split chat-split">
+        <div class="chatbox">
+          <div class="chat-head">
+            <select id="chat-order" aria-label="Order to discuss"></select>
+            <button class="btn small" id="chat-join">Join chat</button>
+            <button class="btn small ghost" id="chat-leave" hidden>Leave</button>
+            <button class="btn small danger" id="chat-close" hidden>Close for both</button>
+          </div>
+          <div class="presence" id="presence">Not connected to a chat room.</div>
+          <div class="msgs" id="msgs" aria-live="polite"></div>
+          <div class="typing" id="typing"></div>
+          <form id="chat-form" class="chat-form">
+            <input id="chat-input" placeholder="Type a message" autocomplete="off" disabled>
+            <button class="btn" disabled>Send</button>
+          </form>
+        </div>
+        <aside class="queue">
+          <h3 id="queue-title">How it works</h3>
+          <div id="queue-body" class="muted">Each order has its own private room with one customer and one agent. Pick an order and join. Joining asks for the email on the order, so nobody else can read it.</div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ALERTS -->
+    <section id="tab-alerts" class="panel" hidden>
+      <div class="row-between"><h2>Live system alerts</h2><span class="muted" id="stats">Waiting for server stats...</span></div>
+      <p class="muted">Pushed by the server over Server-Sent Events (<code>GET /events</code>). No polling. The browser reconnects by itself and replays anything it missed.</p>
+      <ul id="alerts" class="alerts"></ul>
+    </section>
+
+    <!-- RPC -->
+    <section id="tab-rpc" class="panel" hidden>
+      <h2>JSON-RPC 2.0 console</h2>
+      <p class="muted">Sends the raw text below to <code>POST /rpc</code>. Try a template, break the JSON on purpose, or send a batch.</p>
+      <div class="rpc">
+        <div>
+          <div class="inline">
+            <select id="rpc-template"></select>
+            <button class="btn" id="rpc-send">Send</button>
+          </div>
+          <label class="sr" for="rpc-body">Request</label>
+          <textarea id="rpc-body" spellcheck="false" rows="14"></textarea>
+        </div>
+        <div>
+          <div class="muted">Response <span id="rpc-status"></span></div>
+          <pre id="rpc-out">Nothing sent yet.</pre>
+        </div>
+      </div>
+      <h3>Protocol activity</h3>
+      <ul id="log" class="log"></ul>
+    </section>
+  </main>
+
+  <div id="toasts" aria-live="assertive"></div>
+  <script src="app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+# Netlify: set "Base directory" to `frontend` (or publish directory = frontend). No build command needed.
+[build]
+  publish = "."
