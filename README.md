@@ -202,69 +202,18 @@ es.addEventListener("alert", (e) => console.log(JSON.parse(e.data)));
 
 Each alert has an `id`, so if the connection drops the browser reconnects with `Last-Event-ID` and the server **replays the missed alerts**. A heartbeat comment is sent every 15 s to keep proxies from closing the stream.
 
----
+# Outputs:
+<img width="1354" height="671" alt="1" src="https://github.com/user-attachments/assets/2d60fdc1-b1c5-492c-8f4d-3f9460bba449" />
 
-## Deployment
+<img width="1345" height="686" alt="2" src="https://github.com/user-attachments/assets/3e1e8b24-161f-4f70-b70f-dd909fae60aa" />
 
-You deploy the **backend first** (to get its URL), then the **frontend**, then tell the backend the frontend's URL.
+<img width="1354" height="667" alt="3" src="https://github.com/user-attachments/assets/b3cc4002-a189-48f3-8666-80fe8298418d" />
 
-### A. Push to GitHub
+<img width="1354" height="656" alt="4" src="https://github.com/user-attachments/assets/5f3cb88b-6249-4f47-923c-eedc75f3bfbf" />
 
-```bash
-git init
-git add .
-git commit -m "Order tracking & live support system"
-git branch -M main
-git remote add origin https://github.com/<your-username>/<repo-name>.git
-git push -u origin main
-```
+<img width="1354" height="634" alt="5" src="https://github.com/user-attachments/assets/d7bc5b56-761e-4b04-a618-d1b867c71464" />
 
-### B. Backend on Render
 
-1. Go to [render.com](https://render.com) → **New +** → **Web Service** → connect your GitHub repo.
-2. Settings:
-   - **Root Directory:** `backend`
-   - **Build Command:** `npm install --omit=dev`
-   - **Start Command:** `npm start`
-   - **Health Check Path:** `/health`
-3. Environment variables: `AGENT_KEY` = a secret of your choice, `CORS_ORIGIN` = `*` for now (you will tighten it in step D).
-4. Deploy. Your API URL looks like `https://order-tracking-api.onrender.com`. Open `/health` to confirm.
 
-(Or use **New + → Blueprint** and select the repo; `render.yaml` fills all of this in.)
 
-*Railway instead:* New Project → Deploy from GitHub → set **Root Directory** to `backend` → add the same variables → Settings → Networking → **Generate Domain**.
 
-> Render's free plan sleeps after ~15 minutes without traffic, so the first request can take about 30-50 seconds. Orders and chats live in memory and reset when the server restarts. See "Production notes" below.
-
-### C. Frontend on Vercel
-
-1. Edit `frontend/config.js` and set your backend URL:
-   ```js
-   window.APP_CONFIG = { API_URL: "https://order-tracking-api.onrender.com" };
-   ```
-   Commit and push.
-2. Go to [vercel.com](https://vercel.com) → **Add New… → Project** → import the repo.
-3. **Root Directory:** `frontend`. **Framework Preset:** Other. Leave build command empty. Deploy.
-
-*Netlify instead:* Add new site → import from Git → **Base directory** `frontend`, no build command, publish directory `frontend` (or `.` when the base directory is set).
-
-### D. Lock down CORS
-
-In Render, change `CORS_ORIGIN` to your real frontend URL (for example `https://parcelwise.vercel.app`) and redeploy. Now only your site can call the API.
-
-### Checking the live deployment
-
-- `https://<api>/health` returns `{"status":"ok"}`
-- Open the Vercel URL. The three dots in the header (REST, WebSocket, SSE) should all turn green.
-- You can also test any backend without editing files by opening `https://<your-frontend>/?api=https://<your-api>`.
-
-## Security and production notes
-
-- Agent actions are protected by one shared `AGENT_KEY`. This is enough for the assignment; a real system would use user accounts and JWT/session auth.
-- A customer can only join the chat for an order if they know the **email on that order**.
-- All user-generated text is HTML-escaped in the UI, and chat text is stripped of control characters and length-limited.
-- Data is stored in memory to keep the project simple to run. To persist it, replace the maps in `store.js` with PostgreSQL/MongoDB (the rest of the code only uses the functions exported by `store.js`). To run more than one server instance, add the Socket.io Redis adapter and a Redis pub/sub for SSE.
-
-## License
-
-MIT
